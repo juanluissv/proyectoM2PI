@@ -1,0 +1,8 @@
+Ejemplos ilustrativos de preguntas
+No vas a recibir un golden dataset armado — construirlo es parte del proyecto. Estos ejemplos son solo una referencia de los tipos de pregunta que tu dataset debería cubrir, no una lista para copiar:
+
+Directa: "¿Con cuánta anticipación tengo que pedir las vacaciones?"
+Con sinónimos (no repite las palabras del documento): "¿Cuánta plata me dan por mes para pagar internet en casa?"
+Cruza documentos: "Si me roban la notebook durante un viaje de trabajo, ¿qué tengo que hacer y puedo pedir reintegro de los gastos?"
+Con distractor cercano: "¿Cuántos días me corresponden por casamiento?" (la respuesta convive en la misma sección con otras licencias parecidas)
+Fuera de alcance (bonus): "¿Nubbix tiene estacionamiento para empleados en la oficina?"

@@ -1,0 +1,94 @@
+Guía para el desarrollo del proyecto integrador
+Propósito de esta guía
+Esta guía te acompaña en el desarrollo del Proyecto Integrador de AI Engineering correspondiente al Módulo 2. No reemplaza la consigna ni define pasos obligatorios: te orienta para que puedas organizarte, priorizar correctamente y evitar errores comunes.
+
+El foco está en ayudarte a construir un MVP funcional, medido y bien documentado, alineado con los estándares esperados para un perfil Junior en AI Engineering.
+
+Qué se espera del proyecto
+Se espera que desarrolles un asistente RAG que responda sobre la documentación de Nubbix aplicando lo aprendido en el módulo, y que cumpla con los requisitos definidos en la consigna oficial.
+
+Más allá de la cantidad de funcionalidades, se valorará especialmente:
+
+Que la ingesta y la consulta funcionen de punta a punta, como procesos separados.
+Que cada respuesta cite chunks reales y que esas citas sostengan lo que se responde.
+Que las decisiones de chunking y de búsqueda estén respaldadas por métricas, no por intuición.
+Que el código sea legible, modular y esté versionado con Git.
+Que la documentación permita entender, instalar y ejecutar el sistema sin ayuda externa.
+Cómo orientar el desarrollo
+Antes de escribir código:
+
+Leé la consigna completa y los tres documentos del corpus. Conocer el corpus es la base de todas tus decisiones.
+Identificá las funcionalidades mínimas obligatorias y las opcionales (bonus y extra credits).
+Definí una estructura simple (ingest/, src/, evals/, data/, prompts/) antes de empezar.
+Pensá qué metadatos va a llevar cada chunk (documento, sección, estrategia): los vas a necesitar para citar y para evaluar.
+Durante el desarrollo:
+
+Priorizá el flujo mínimo: una estrategia de chunking, búsqueda vectorial y una respuesta con citas. Recién después sumá la búsqueda léxica, la fusión híbrida y la segunda estrategia.
+Leé tus chunks a ojo antes de medir nada: la mitad de los problemas de RAG se detectan leyendo 20 chunks (cortes a mitad de una lista, secciones sin su encabezado, chunks demasiado cortos para tener sentido solos).
+Empezá el golden dataset temprano, a medida que conocés el corpus. Las métricas formales se trabajan en la Clase 5, pero las preguntas y sus chunks esperados las podés ir armando desde el principio.
+Probá el asistente con preguntas variadas, incluidas las que usan sinónimos o cruzan documentos.
+Hacé commits pequeños y descriptivos.
+Al finalizar:
+
+Borrá el índice local y corré la ingesta desde cero, idealmente desde un clon nuevo del repositorio.
+Verificá que el JSON de salida sea consumible por otro sistema sin transformaciones adicionales.
+Confirmá que los números del README coinciden con lo que reporta tu runner.
+Revisá que las credenciales sensibles no queden expuestas en el repositorio.
+Buenas prácticas recomendadas
+Chunking
+
+Elegí dos estrategias que realmente se diferencien (por ejemplo, tamaño fijo con overlap vs. por estructura de encabezados); comparar dos variantes casi iguales no aporta información.
+Hacé que la estrategia se seleccione por parámetro en el comando de ingesta, para poder reproducir ambas.
+Si un chunk pierde su encabezado al subdividirse, repetilo: el chunk debe entenderse por sí solo.
+Documentá los parámetros de cada estrategia (tamaño, overlap, límites) y por qué los elegiste.
+Embeddings e indexación
+
+Usá el mismo modelo de embeddings para indexar y para consultar; mezclarlos rompe la comparación de similitud.
+Registrá en el README qué modelo usaste, sus dimensiones y la métrica de distancia configurada en la vector DB.
+No re-indexes en cada consulta: la ingesta construye el índice, la consulta solo lo lee.
+Búsqueda híbrida
+
+Documentá cómo combinás los resultados léxicos y vectoriales (por ejemplo, Reciprocal Rank Fusion o una suma ponderada) y con qué parámetros.
+Revisá casos concretos donde la búsqueda léxica rescata lo que la vectorial pierde, y al revés: son la mejor evidencia de que la hibridación está funcionando.
+Golden dataset y evals
+
+Los chunks esperados dependen de la estrategia de chunking: un mismo dato puede quedar en chunks distintos según cómo cortes el corpus. Etiquetá los chunks esperados para cada estrategia, así la comparación usa la misma fórmula en ambas.
+Incluí preguntas difíciles: sinónimos, preguntas que cruzan documentos y preguntas con distractores cercanos.
+Medí siempre con el mismo dataset y el mismo top_k al comparar.
+Interpretá precision y recall juntas: si la mayoría de tus preguntas tiene un solo chunk esperado y recuperás 3, precision@3 tiene un techo cercano a 0.33 aunque el sistema funcione bien. Recall, hit rate y MRR ayudan a completar la lectura.
+Separá la evaluación de retrieval de la de generación: primero confirmá que el chunk correcto llega al contexto; después, que la respuesta se sostiene en él.
+Generación y citas
+
+Indicá en el prompt que la respuesta debe basarse únicamente en los chunks provistos y citar sus identificadores.
+Si abordás el bonus, definí una respuesta de rechazo explícita y consistente, para poder medirla automáticamente.
+Versioná los prompts de generación y del juez en archivos YAML, como en M1.
+Calidad del código
+
+Separá responsabilidades: chunking, embeddings, vector store, retriever híbrido, generación y evals no deberían vivir en el mismo archivo.
+Usá nombres que expliquen la intención y extraé la lógica repetida.
+No armes un framework propio: la complejidad va a las decisiones de retrieval y a los evals, no a la arquitectura.
+Documentación
+
+Tu README es la primera impresión del proyecto. Debe permitir que alguien más lo entienda, lo instale y lo ejecute sin preguntarte nada.
+Presentá la comparación de chunking como tabla y cerrala con una decisión explícita, incluyendo los trade-offs que encontraste (una estrategia puede ganar en unas métricas y perder en otras).
+Documentá las limitaciones conocidas de tu solución.
+Git y GitHub
+
+Usá mensajes de commit claros (por ejemplo: feat: agregar búsqueda híbrida con RRF).
+Versioná el proyecto desde el inicio.
+No subas el índice persistido, credenciales ni dependencias instaladas: configurá el .gitignore desde el principio.
+Errores comunes a evitar
+Saltar a los extra credits (re-ranking, UI) antes de tener el flujo principal funcionando y medido.
+Dejar credenciales sensibles dentro del código fuente.
+Re-indexar el corpus en cada consulta.
+Comparar estrategias de chunking con datasets, top_k o fórmulas distintas.
+Armar un golden dataset solo con preguntas obvias que repiten las palabras del documento.
+Evaluar únicamente la respuesta final, sin saber si el problema está en el retrieval o en la generación.
+Citar chunks que no sostienen lo que dice la respuesta.
+Re-rankear todo por defecto sin medir su efecto ni su costo en latencia.
+No probar la ingesta desde cero antes de entregar.
+Sobre el uso de IA
+Podés utilizar herramientas de IA como apoyo durante el desarrollo, siguiendo lo aprendido en el módulo. Documentá los prompts que usaste y explicá cómo influyeron en las decisiones técnicas del proyecto. Si usás IA para generar preguntas del golden dataset, revisá y etiquetá vos cada una contra el corpus: un dataset mal etiquetado invalida todas tus métricas. El objetivo del Proyecto Integrador es demostrar tu comprensión sobre cómo se construye y se evalúa un sistema RAG, no delegar esa comprensión a otra herramienta.
+
+Cierre
+Esta guía está pensada para ayudarte a tomar buenas decisiones técnicas y de organización. El objetivo final es que puedas demostrar que comprendés el flujo completo de un sistema RAG — desde la ingesta y el chunking hasta la búsqueda híbrida, la generación con citas y su evaluación por etapas — y que podés entregar una solución funcional, medida y bien presentada.

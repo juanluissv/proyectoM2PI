@@ -1,0 +1,29 @@
+Contexto y Objetivos
+Sos un/a AI Engineer de Nubbix, el SaaS de gestión para pymes de LATAM para el que construiste el servicio de triage de tickets en el Módulo 1. La empresa creció a 350 empleados y su conocimiento interno no acompañó ese crecimiento: las políticas de HR (licencias, beneficios, home office), el manual de IT (accesos, equipos, seguridad) y los procesos de Finance (reintegros, viáticos, compras) viven dispersos en PDFs, wikis y mails. Los equipos de People e IT pierden horas por semana respondiendo las mismas preguntas, y las respuestas no siempre coinciden con la política vigente.
+
+Tu misión: construir Nubbix Assist, el asistente de conocimiento interno de la empresa — un chatbot que responde las preguntas de los empleados a partir de la documentación oficial y cita siempre las fuentes que usó para responder.
+
+El corpus está formado por tres documentos en Markdown. Descargalos desde aquí y ubicalos en data/corpus/ de tu repositorio:
+
+hr_policies.md: políticas de HR (licencias, beneficios, home office)
+it_manual.md: manual de IT (accesos, equipos, seguridad)
+finance_processes.md: procesos de Finance (reintegros, viáticos, compras)
+Los documentos están organizados por secciones con encabezados, y algunos temas cruzan documentos (por ejemplo, el crédito de capacitación aparece en HR y su rendición en Finance). Tené esto en cuenta al diseñar tus estrategias de chunking y tu golden dataset.
+
+Podés reutilizar componentes propios de tu proyecto de M1 (cliente LLM, registro de métricas, estructura de evals); se recomienda, pero no es obligatorio: el proyecto se puede resolver de forma completa sin depender de la entrega anterior.
+
+🎯 Objetivos (qué vas a entregar y por qué importa)
+Construir un pipeline de ingesta reproducible: procesamiento del corpus, chunking con una estrategia justificada y generación de embeddings. Ingesta y consulta son procesos separados: el índice se construye una vez por comando y se consulta todas las veces que haga falta.
+Montar el índice en una vector DB y servir búsqueda híbrida (léxica + vectorial). La búsqueda vectorial sola falla con términos exactos (nombres de plataformas, montos, canales de Slack); la léxica sola falla con sinónimos. Combinarlas es lo que hace robusto al retrieval.
+Decidir con datos: comparar dos estrategias de chunking sobre el mismo corpus y elegir una en base a métricas de retrieval, no a intuición. Esta comparación es un entregable central del módulo, no un anexo.
+Evaluar el sistema separando retrieval de generación: precision/recall de los chunks recuperados contra un golden dataset, y groundedness de las respuestas (que lo que responde el asistente se sostenga en los chunks que cita). Si el sistema responde mal, primero tenés que poder saber cuál de las dos etapas falla.
+¿Por qué esto es importante? RAG es la forma estándar de conectar un LLM con conocimiento privado y actualizable sin reentrenarlo. Pero un RAG que "parece funcionar" en una demo puede estar recuperando los chunks equivocados o inventando datos con tono convincente. Saber construir el pipeline, medirlo por etapas y defender cada decisión con números es lo que separa un prototipo de un sistema en el que una empresa puede confiar.
+
+📢 Consigna
+Construir un chatbot de conocimiento interno que responde preguntas sobre la documentación de la empresa citando las fuentes.
+
+El sistema procesa el corpus provisto, lo divide en chunks (al menos 20 chunks resultantes con, como mínimo, una de tus dos estrategias), genera embeddings, indexa en una vector DB y responde consultas con búsqueda híbrida. Cada respuesta se devuelve en JSON con el contrato {user_question, system_answer, chunks_related}, donde chunks_related contiene los chunks usados para responder, identificados de forma que la cita se pueda rastrear hasta su documento de origen.
+
+El proyecto incluye una comparación documentada de dos estrategias de chunking sobre el mismo corpus, decidida con métricas de retrieval, y una suite de evals ejecutable por comando que mide por separado retrieval (precision/recall contra un golden dataset que construís vos) y generación (groundedness).
+
+Bonus/opcional dentro de la consigna: rechazo honesto — cuando la respuesta no está en la base documental, el asistente lo dice en lugar de inventar. El comportamiento se incluye en el golden dataset (preguntas fuera de alcance) y se mide en la suite de evals.

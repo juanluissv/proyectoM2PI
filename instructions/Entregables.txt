@@ -1,0 +1,40 @@
+Entregables del proyecto y requisitos de entrega
+Enviar mediante un enlace público al repositorio en Git. Asegurate de que el repositorio sea autocontenido y que se pueda ejecutar sin depender de elementos externos no documentados.
+
+📂 Estructura de repositorio esperada
+Entregable	Archivo/Formato	Contenido mínimo
+Corpus documental	data/corpus/	Los tres documentos provistos por Henry, sin modificar (o instrucciones claras de descarga en el README).
+Pipeline de ingesta	ingest/ (ej. ingest/ingest.py + ingest/chunking.py)	Corre por comando de cero al índice completo: carga el corpus, aplica la estrategia de chunking elegida por parámetro (las dos estrategias implementadas), genera embeddings e indexa cada chunk con sus metadatos (documento de origen, sección, estrategia).
+Índice en vector DB	Chroma local persistente (o una DB gestionada)	Índice persistido en disco o en la nube: consultar no implica volver a indexar. Cada estrategia de chunking se indexa por separado (por ejemplo, una colección por estrategia) para poder compararlas.
+Servicio de consulta	src/ (CLI o endpoint)	Recibe la pregunta; ejecuta búsqueda híbrida (léxica + vectorial) con un método de combinación documentado; genera la respuesta con un LLM usando solo los chunks recuperados; devuelve JSON con {user_question, system_answer, chunks_related} y citas a los chunks usados.
+Prompts	prompts/*.yaml (recomendado)	Prompt de generación y prompt del juez de groundedness fuera del código, como en M1.
+Golden dataset	evals/dataset.jsonl	≥25 preguntas, cada una con sus chunks esperados etiquetados. Incluye preguntas difíciles (sinónimos, preguntas que cruzan documentos), no solo las obvias.
+Suite de evals	evals/runner.py	Script ejecutable por comando (no framework de testing) que mide retrieval (precision y recall) y generación (groundedness) por separado, para cada estrategia de chunking, y reporta los resultados.
+Comparación de chunking	Sección en el README.md	Tabla con las métricas de retrieval de ambas estrategias, medidas con el mismo dataset y el mismo top_k, y la decisión final justificada con esos números.
+README	README.md	Setup y uso (con ejemplo de comando y respuesta JSON), descripción del corpus, decisiones de chunking con la comparación y sus números, resultados de evals de retrieval y generación, decisiones técnicas (modelo de embeddings, vector DB, método de búsqueda híbrida).
+Configuración	.env.example, requirements.txt	Variables de entorno documentadas (nunca credenciales reales); dependencias declaradas.
+Rechazo honesto (bonus)	Casos en evals/dataset.jsonl + sección en el README	Preguntas fuera de alcance marcadas en el dataset, métrica de rechazo correcto reportada por el runner y ejemplo documentado en el README.
+🧾 Formato de salida esperado
+El formato exacto de data/corpus/ y los campos adicionales los definís vos; lo mínimo es que cada chunk citado permita identificar su documento de origen y su contenido.
+
+Copy
+{
+  "user_question": "¿Hasta qué día del mes puedo cargar una rendición de gastos?",
+  "system_answer": "Las rendiciones se cargan en ExpenseHub antes del día 25 de cada mes; las que se ingresan después se procesan en el ciclo de pagos del mes siguiente [finance_processes.md_0].",
+  "chunks_related": [
+    {
+      "chunk_id": "finance_processes.md_0",
+      "source": "finance_processes.md",
+      "content": "## Reintegro de Gastos y Viáticos\n...",
+      "score": 0.87
+    }
+  ]
+}
+Tené en cuenta lo aprendido en el Módulo 2: embeddings y similitud (Clase 1), estrategias de chunking y metadatos (Clase 2), vector databases y búsqueda híbrida (Clase 3), técnicas de retrieval avanzado (Clase 4) y evaluación de sistemas RAG (Clase 5).
+
+✅ Checklist de entrega
+Claves de API cargadas por variable de entorno, nunca en el código.
+La ingesta corre de cero con un solo comando por estrategia y deja el índice persistido.
+Al menos una consulta ejecutada que devuelva JSON válido con citas a chunks reales del índice.
+Suite de evals corrida sobre las dos estrategias, con resultados reflejados en el README.
+README y código consistentes entre sí: alguien que clone el repo debería poder instalarlo, indexar y consultar sin preguntarte nada.

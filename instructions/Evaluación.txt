@@ -1,0 +1,17 @@
+Evaluación
+
+La corrección se realiza mediante rúbrica, con niveles Excelente / Satisfactorio / Insuficiente por categoría. El puntaje mínimo de aprobación es 70/100; un puntaje de 81 a 100 se considera que supera lo esperado.
+
+Categorías evaluadas:
+
+Ingesta y reproducibilidad — pipeline de ingesta por comando de principio a fin, indexación en vector DB y búsqueda híbrida (léxica + vectorial) funcionando.
+Estrategia de chunking — comparación de dos estrategias medida contra el golden dataset y decisión fundamentada con números.
+Calidad del retrieval — golden dataset (≥25 preguntas, con casos complejos o que cruzan documentos) y medición de precision y recall separada de la generación.
+Groundedness y respuestas — contrato JSON con citas y evaluación automatizada (LLM-as-judge) de que las respuestas se sostienen en los chunks citados.
+Código y README — modularidad (/src, /ingest, /evals), README con setup, corpus, decisiones técnicas, números comparativos y conclusiones.
+El bonus (rechazo honesto) y los extra credits no son requisito de aprobación. Si los abordás, documentalos con su efecto medido.
+
+⭐ Extra credit (opcional)
+Re-ranking con cross-encoder, con el delta de métricas medido contra el pipeline sin re-ranking (y su costo en latencia).
+Query rewriting / multi-query para preguntas mal formuladas, con su efecto medido.
+UI mínima (Streamlit o similar) con las citas navegables. No se ve en el módulo: es una milla extra de investigación propia.
