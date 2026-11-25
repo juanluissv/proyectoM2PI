@@ -1,0 +1,26 @@
+Metadatos por chunk
+Qué acompaña a cada chunk
+En un sistema en producción, cada chunk se guarda junto con metadatos: información sobre su origen que no se embeddea, pero que viaja con el vector. En un sistema RAG, rastrear el origen de cada chunk es lo que permite que una respuesta cite su fuente con precisión. Un esquema práctico combina datos del documento y datos del chunk:
+
+Copy
+{
+  "id": "POL-AS-01#1.2",
+  "texto": "Política de Asientos y Embarque de OrbitAir > 1. Selección de asientos > 1.2 Asientos con cargo\n\n...",
+  "metadatos": {
+    "doc": "POL-AS-01",
+    "titulo_doc": "Política de Asientos y Embarque de OrbitAir",
+    "version": "1.0",
+    "vigente_desde": "2026-03-01",
+    "estrategia": "seccion",
+    "seccion": "1.2",
+    "titulo": "1.2 Asientos con cargo",
+    "parte": "1/1"
+  }
+}
+usos de los metadatos
+Cada campo del esquema tiene que responder a un uso concreto; si un campo no sirve para ninguno, sobra.
+
+Citar la fuente. El sistema puede mostrarle al usuario de dónde salió la respuesta: "POL-AS-01 v1.0 (vigente desde 2026-03-01), §1.2". Sin documento, versión y sección, la cita es imposible, y el usuario no tiene forma de verificar lo que se le respondió.
+
+Filtrar la búsqueda. Campos como doc, version o vigente_desde permiten restringir la búsqueda a un documento, a una categoría o a lo vigente en una fecha. Los filtros por metadatos dentro de una vector database se trabajan en la Clase 3.
+

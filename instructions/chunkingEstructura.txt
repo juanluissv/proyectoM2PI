@@ -1,0 +1,43 @@
+Respetar las unidades que escribió el autor
+Muchos documentos de una organización ya están divididos en unidades de sentido: secciones con encabezados, tablas, listas de requisitos. El chunking por estructura usa esas divisiones como límites. En un documento Markdown, cada encabezado (##, ###) marca el inicio de una sección, y cada sección es un candidato natural a chunk.
+
+Esta estrategia es un caso particular del splitting recursivo: se empieza por la unidad más grande que tenga sentido (la sección) y sólo se baja a unidades menores (párrafos, bloques) cuando la sección supera el tamaño máximo.
+
+Ventajas: los chunks coinciden con unidades de sentido completas; una regla, una tabla o una lista de requisitos queda entera en un solo chunk.
+Desventajas: los tamaños salen desparejos (una sección puede tener 40 tokens y otra 400), y depende de que el documento tenga una estructura explícita y consistente.
+Casos de uso: documentación con encabezados —políticas, manuales, wikis—, que es la mayor parte del conocimiento interno de una empresa.
+Secciones largas: partir por bloques, nunca por dentro
+Cuando una sección supera el máximo de tokens, se parte agrupando bloques completos —un párrafo, una tabla o una lista entera, separados por una línea en blanco— hasta llenar el chunk. Un bloque nunca se corta por dentro: si una tabla sola supera el máximo, queda como un chunk más grande que el resto. Es preferible un chunk grande a una tabla partida, porque una fila de tabla separada de sus encabezados de columna pierde su significado.
+
+Copy
+import re
+
+def partir_por_bloques(texto, max_tokens):
+    """Agrupa bloques enteros (párrafo, tabla, lista) sin pasar `max_tokens`."""
+    bloques = [b.strip() for b in re.split(r"\n\s*\n", texto) if b.strip()]
+    partes, actual = [], []
+    for b in bloques:
+        if actual and contar_tokens("\n\n".join(actual + [b])) > max_tokens:
+            partes.append("\n\n".join(actual))
+            actual = []
+        actual.append(b)
+    if actual:
+        partes.append("\n\n".join(actual))
+    return partes
+La ruta de headers
+Un chunk por sección tiene un problema sutil: su texto puede no decir de qué trata. Una sección titulada "1.1 Edades", leída sola, no indica a qué servicio se refiere ni de qué política forma parte. Por eso se antepone a cada chunk la ruta de headers completa:
+
+Copy
+Política de Menores No Acompañados de OrbitAir > 1. Servicio de acompañamiento > 1.1 Edades
+Esa línea se embeddea junto con el texto, de modo que el vector del chunk "sabe" de qué documento y de qué sección viene, aunque su cuerpo no lo diga. Es un cambio de una línea cuyo efecto conviene medir, no suponer.
+
+Copy
+def chunk_por_seccion(doc, max_tokens=350, con_ruta=True):
+    """Un chunk por sección; las que superan `max_tokens` se parten por bloques."""
+    chunks = []
+    for s in secciones(doc):     # cada sección: número, título, ruta de headers y cuerpo
+        partes = [s.cuerpo] if contar_tokens(s.cuerpo) <= max_tokens else partir_por_bloques(s.cuerpo, max_tokens)
+        for parte in partes:
+            encabezado = s.ruta if con_ruta else s.titulo
+            chunks.append(f"{encabezado}\n\n{parte}")
+    return chunks

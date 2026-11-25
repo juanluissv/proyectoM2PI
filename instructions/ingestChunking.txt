@@ -1,0 +1,27 @@
+Chunking
+
+- Elegí dos estrategias que realmente se diferencien 
+    (por ejemplo, tamaño fijo con overlap vs. por estructura de encabezados); 
+- comparar dos variantes casi iguales no aporta información.
+- Hacé que la estrategia se seleccione por parámetro en el comando de ingesta, para poder reproducir ambas.
+- Si un chunk pierde su encabezado al subdividirse, repetilo: el chunk debe entenderse por sí solo.
+- Documentá los parámetros de cada estrategia (tamaño, overlap, límites) y por qué los elegiste.
+- Los documentos están organizados por secciones con encabezados, y algunos temas cruzan documentos 
+    (por ejemplo, el crédito de capacitación aparece en HR y su rendición en Finance). 
+    Tené esto en cuenta al diseñar tus estrategias de chunking y tu golden dataset.
+- al menos 20 chunks resultantes con, como mínimo,
+- Cada estrategia de chunking se indexa por separado (por ejemplo, una colección por estrategia) 
+    para poder compararlas.
+
+
+1. Load corpus          → read .md files from data/corpus/
+2. Chunk                → split into pieces + metadata
+3. Embed                → one vector per chunk (same model always)
+4. Index / persist      → write chunks + vectors + metadata to pinecone (or similar)
+
+od pair for your corpus (headers + cross-doc topics):
+
+Strategy A: split on ## (and subdivide long sections if needed, repeat parent heading in each sub-chunk).
+Strategy B: fixed size + overlap (e.g. 400–600 chars, overlap 50–100).
+
+

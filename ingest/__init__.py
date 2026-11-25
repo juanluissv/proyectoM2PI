@@ -1,0 +1,1 @@
+"""Ingest pipeline: chunking, embeddings, and vector index."""
