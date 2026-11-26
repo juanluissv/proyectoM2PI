@@ -1,0 +1,67 @@
+Búsqueda híbrida (BM25 + vectorial)
+
+Por qué combinar dos búsquedas
+La búsqueda semántica es potente, pero tiene límites concretos, y la búsqueda por palabras clave tiene exactamente los límites opuestos.
+
+Límites de la búsqueda vectorial:
+Códigos y tokens raros: una clase tarifaria de una letra, un código de servicio como WCHS o un número de reclamo son casi ruido para un embedding, aunque sean el dato que define la respuesta.
+Falta de especificidad: la similitud semántica encuentra textos "del tema", pero no garantiza que contengan el término exacto que el usuario necesita.
+Límites de la búsqueda por palabras clave:
+Fragilidad ante la variación del lenguaje: falla con sinónimos, paráfrasis y conceptos expresados de forma indirecta. "¿Puedo viajar con mi gato?" no comparte palabras con "transporte de mascotas en cabina".
+Dependencia del vocabulario del documento: exige que el usuario use los mismos términos que el autor, algo que casi nunca ocurre.
+La búsqueda híbrida combina ambas para que cada una cubra lo que la otra pierde.
+
+BM25: la búsqueda léxica
+BM25 (Best Matching 25) es el algoritmo estándar de búsqueda por palabras clave. Para cada chunk, suma la contribución de cada término de la consulta según tres factores:
+
+Frecuencia en el chunk: cuántas veces aparece el término, con saturación (la quinta aparición suma mucho menos que la primera).
+Rareza en el corpus (IDF): un término que aparece en pocos chunks pesa mucho más que uno que aparece en casi todos. Es la razón por la que BM25 encuentra códigos: WCHS aparece en un solo chunk y domina el puntaje.
+Largo del chunk: se normaliza para que un chunk largo no gane sólo por tener más palabras.
+Para un término t y un chunk d:
+
+IDF(t)      = ln(1 + (N − df(t) + 0,5) / (df(t) + 0,5))
+score(t, d) = IDF(t) · tf · (k1 + 1) / (tf + k1 · (1 − b + b · |d| / largo_promedio))
+
+donde N es la cantidad de chunks, df(t) en cuántos aparece el término, tf cuántas veces aparece en d y |d| el largo de d en tokens. Los valores habituales son k1 = 1,5 (saturación) y b = 0,75 (normalización por largo). El puntaje del chunk es la suma sobre los términos de la consulta.
+
+Antes de contar, el texto se tokeniza: se pasa a minúsculas, se quitan tildes y se descartan las palabras vacías (stopwords). Son decisiones de dominio con consecuencias: sin stemming, "bici" y "bicicletas" son términos distintos; y si la letra "y" es una stopword, una consulta por la clase tarifaria "Y" pierde el dato clave.
+
+Combinar dos rankings
+Los puntajes de las dos búsquedas no son comparables: el coseno vive entre -1 y 1 (y en la práctica se amontona en un rango estrecho), mientras que BM25 no tiene techo y su escala cambia con cada consulta. Sumarlos directamente no tiene sentido. para combinarlos:
+
+Reciprocal Rank Fusion (RRF): 
+ignora los puntajes y usa sólo las posiciones. Cada chunk suma, por cada ranking en el que aparece, peso_léxico, con peso_semántico por convención.
+
+from collections import defaultdict
+
+def fusion_rrf(rankings, k=60):
+    """`rankings`: listas de ids, cada una del más al menos relevante. Devuelve [(id, puntaje)]."""
+    puntajes = defaultdict(float)
+    for ranking in rankings:
+        for posicion, id_ in enumerate(ranking, 1):
+            puntajes[id_] += 1 / (k + posicion)
+    return sorted(puntajes.items(), key=lambda x: -x[1])
+
+RRF premia el acuerdo: un chunk que sale primero en un ranking y no aparece en el otro suma 1/61 ≈ 0,0164, mientras que uno que sale tercero en los dos suma 2/63 ≈ 0,0317 y le gana. No tiene nada que calibrar salvo k, y por eso es el punto de partida habitual.
+
+La consecuencia de premiar el acuerdo es importante: un chunk que sólo encuentra uno de los dos buscadores entra al ranking fusionado por debajo de los que encuentran ambos. La búsqueda híbrida amplía la cobertura del top-k —trae resultados que la vectorial sola no encontraba—, pero no necesariamente los ordena mejor. Con un k chico puede incluso salir peor que la búsqueda vectorial sola; con un k más amplio suele ganar en recall. 
+
+BM25, a mano
+BM25 no entiende de significados: cuenta qué palabras de la pregunta aparecen en cada chunk, y le da más peso a las palabras raras. Una "K" de clase de reserva aparece en casi ningún chunk; "pasaje" aparece en muchos. Encontrar la "K" dice mucho más.
+
+tokenizar: pasa el texto a minúsculas, le saca las tildes, lo corta en palabras y descarta las stopwords ("de", "la", "que"…), que aparecen en todos lados y no ayudan a distinguir.
+
+idf (qué tan rara es la palabra): ln(1 + (N − df + 0,5) / (df + 0,5)), donde N es la cantidad de chunks y df en cuántos aparece la palabra. Rara → idf alto.
+aporte (cuánto suma una palabra a un chunk): el idf, multiplicado por cuántas veces aparece (tf), con dos ajustes:
+k1 = 1,5: la quinta aparición suma mucho menos que la primera;
+b = 0,75: un chunk largo tiene más palabras "de casualidad", así que se lo castiga un poco.
+puntajes: el puntaje de cada chunk es la suma de los aportes de las palabras de la pregunta.
+
+Los tres devuelven una lista de ids, del más al menos relevante:
+
+buscar_bm25: ordena los chunks por puntaje BM25 y descarta los que dan 0 (no comparten ninguna palabra).
+buscar_vectorial: lo mismo que el paso 9, en Chroma. Se le puede pasar el vector ya calculado, para no embeddear la misma pregunta varias veces.
+buscar_hibrida: pide 20 candidatos a cada buscador y los combina con RRF.
+¿Por qué RRF y no sumar los puntajes? Porque no se pueden comparar: el coseno se mueve entre 0,3 y 0,7, y BM25 no tiene techo (puede dar 2 o 15, según la pregunta). RRF ignora los puntajes y usa sólo las posiciones:
+
+RRF(chunk) = suma, en cada lista, de 1 / (60 + posición)

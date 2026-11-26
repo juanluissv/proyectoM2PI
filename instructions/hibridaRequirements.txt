@@ -1,0 +1,23 @@
+- Montar el índice en una vector DB y servir búsqueda híbrida (léxica + vectorial). 
+La búsqueda vectorial sola falla con términos exactos 
+(nombres de plataformas, montos, canales de Slack); 
+la léxica sola falla con sinónimos. Combinarlas es lo que hace robusto al retrieval.
+
+- query.py: Recibe la pregunta; ejecuta búsqueda híbrida (léxica + vectorial) 
+    con un método de combinación documentado; genera la respuesta con un LLM usando 
+    solo los chunks recuperados; devuelve JSON con 
+    {user_question, system_answer, chunks_related} y citas a los chunks usados.
+
+-Ingesta y reproducibilidad — pipeline de ingesta por comando de principio a fin, 
+indexación en vector DB y búsqueda híbrida (léxica + vectorial) funcionando.
+
+-Priorizá el flujo mínimo: una estrategia de chunking,
+ búsqueda vectorial y una respuesta con citas. 
+ Recién después sumá la búsqueda léxica, la fusión híbrida y la segunda estrategia.
+
+
+Búsqueda híbrida
+Documentá cómo combinás los resultados léxicos y vectoriales 
+(por ejemplo, Reciprocal Rank Fusion o una suma ponderada) y con qué parámetros.
+Revisá casos concretos donde la búsqueda léxica rescata lo que la vectorial pierde,
+y al revés: son la mejor evidencia de que la hibridación está funcionando.
